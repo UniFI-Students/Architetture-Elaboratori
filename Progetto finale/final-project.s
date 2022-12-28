@@ -5,8 +5,12 @@ C: .byte 67
 D: .byte 68
 E: .byte 69
 Newline: .byte 10
+
+
 mycypher: .string "ABCDE"
 myplaintext: .string "test"
+sostK: .word -2
+blockKey: .string "OLE"
 
 #Should be declared last, 
 #because it will grow after applying encryption by occurrences
