@@ -1,16 +1,41 @@
 .data
-
-mycypher: .string "Security"
+A: .byte 65
+B: .byte 66
+C: .byte 67
+D: .byte 68
+E: .byte 69
+Newline: .byte 10
+mycypher: .string "ABCDE"
 myplaintext: .string "test"
 
 #Should be declared last, 
-#because it will grow after applying cryptography by occurrences
-cryptedtext: .string ""  
+#because it will grow after applying encryption by occurrences
+encryptedtext: .string ""  
 
 .text
 
 j main
 
+#copyString(a0, a1)
+#Takes:
+#    a0 - adress of the string to copy to
+#    a1 - adress of the string to copy from
+copyString:
+    addi t0, a0, 0
+    addi t1, a1, 0
+    
+    
+    copyString_loop:
+        lb t2, 0(t1)
+        sb t2, 0(t0)
+        beq t2, zero, copyString_endLoop 
+        addi t0, t0, 1
+        addi t1, t1, 1
+        j copyString_loop
+    
+    copyString_endLoop:
+        jr ra
+    
 
 #length(a0)
 #Takes:
@@ -99,11 +124,11 @@ isLetter:
     
     jal isSmallLetter
     
-return_isLetter:   
-    lw ra, 4(sp)
-    addi sp, sp, 8
+    return_isLetter:   
+        lw ra, 4(sp)
+        addi sp, sp, 8
     
-    jr ra
+        jr ra
     
 
 #isCapitalLetter(a0)
@@ -167,10 +192,8 @@ isNumber:
 #Takes:
 #    a0 - dividend
 #    a1 - divisor
-
 #Returns:
 #    a0 - reminder 
-
 mod:
     addi t0, a0, 0
     addi t1, a1, 0
@@ -178,36 +201,128 @@ mod:
     bge t0, t1, sub_loop_mod  
     bgt t0, zero, end_loop_mod
 
-#add untill original value is less than zero
-#(in case of negative original value)
-add_loop_mod:
-    add t0, t0, t1
-    blt t0, zero, add_loop_mod
-    j end_loop_mod
+    #add untill original value is less than zero
+    #(in case of negative original value)
+    add_loop_mod:
+        add t0, t0, t1
+        blt t0, zero, add_loop_mod
+        j end_loop_mod
 
-#subtract untill original value is bigger than modulo value
-sub_loop_mod:
-    sub t0, t0, t1
-    bge t0, t1, sub_loop_mod
+    #subtract untill original value is bigger than modulo value
+    sub_loop_mod:
+        sub t0, t0, t1
+        bge t0, t1, sub_loop_mod
     
-end_loop_mod:
-    addi a0, t0, 0
-    jr ra
+    end_loop_mod:
+        addi a0, t0, 0
+        jr ra
 
 
 #printNumber(a0)
 #Takes:
-# a0 - number
+#    a0 - number
 printNumber:
     li a7, 1
     ecall
     jr ra
 
-main:
-    la a0, myplaintext
-    li a1, 0
-    li a2, 116
-    jal findNextLetterOccurenceInTheString
-    jal printNumber
+#printString(a0)
+#Takes:
+#    a0 - adress of the string
+printString:
+    li a7, 4
+    ecall  
+    jr ra
+    
+#printNewLine()
+printNewLine:
+    #save a0 to t0 so it wont affect later on a0
+    #(used for chaining methods execution)
+    addi t0, a0, 0
+    
+    lb a0, Newline
+    li a7, 11
+    ecall    
+    
+    addi a0, t0, 0
+    jr ra
 
+
+main:
+    la s0, mycypher
+    la s1, encryptedtext
+    la s2, myplaintext
+    
+    lb s3, A
+    lb s4, B
+    lb s5, C
+    lb s6, D
+    lb s7, E
+    
+    
+    addi a0, s0, 0
+    jal length
+    addi s8, a0, 0
+    
+    addi a0, s1, 0
+    addi a1, s2, 0
+    jal copyString
+    jal printString
+    jal printNewLine
+    
+    main_encryption_loop:
+        lb t0, 0(s0)
+        addi s0, s0, 1
+        beq t0, zero, main_encryption_endLoop
+        beq t0, s3, main_AEncryption
+        beq t0, s4, main_BEncryption
+        beq t0, s5, main_CEncryption
+        beq t0, s6, main_DEncryption
+        beq t0, s7, main_EEncryption
+        j main_encryption_loop
+        
+    main_AEncryption:
+        j main_encryption_loop
+    main_BEncryption:
+        j main_encryption_loop
+    main_CEncryption:
+        j main_encryption_loop
+    main_DEncryption:
+        j main_encryption_loop
+    main_EEncryption:
+        j main_encryption_loop
+
+
+
+    main_encryption_endLoop:
+        addi s0, s0, -2 #add -2 so in loop we`ll be able to load char without any offset
+        addi s8, s8, 1 #add 1 so in loop we`ll be able to check equality for 0
+        
+    main_decryption_loop:
+        lb t0, 0(s0)
+        addi s0, s0, -1
+        addi s8, s8, -1
+        beq s8, zero, main_decryption_endLoop
+        beq t0, s3, main_ADecryption
+        beq t0, s4, main_BDecryption
+        beq t0, s5, main_CDecryption
+        beq t0, s6, main_DDecryption
+        beq t0, s7, main_EDecryption
+        j main_decryption_loop
+        
+    main_ADecryption:
+        j main_decryption_loop
+    main_BDecryption:
+        j main_decryption_loop
+    main_CDecryption:
+        j main_decryption_loop
+    main_DDecryption:
+        j main_decryption_loop
+    main_EDecryption:
+        j main_decryption_loop
+
+
+    main_decryption_endLoop:    
+        jal printString
+        jal printNewLine
 
