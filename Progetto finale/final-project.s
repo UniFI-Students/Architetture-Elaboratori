@@ -1,8 +1,60 @@
 .data
 
+mycypher: .string "Security"
+myplaintext: .string "test"
+
+#Should be declared last, 
+#because it will grow after applying cryptography by occurrences
+cryptedtext: .string ""  
+
 .text
 
 j main
+
+
+#length(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - length
+length:
+    addi t0, a0, 0
+
+    length_loop:    
+        lb t1, 0(t0)
+        beq t1, zero, length_end_loop
+        addi t0, t0, 1
+        j length_loop
+
+    length_end_loop:
+        sub a0, t0, a0
+        jr ra
+
+#findNextLetterOccurenceInTheString(a0, a1, a2)
+#Takes:
+#    a0 - adress of the string
+#    a1 - offset
+#    a2 - letter
+#Returns:
+#    a0 - index of the next letter occurence
+findNextLetterOccurenceInTheString:
+    add t0, a0, a1
+
+    while_notFoundLetter_Or_EndOfString:    
+        lb t1, 0(t0)
+        beq t1, zero, failedSearch_loop_end
+        beq t1, a2, successfulSearch_loop_end
+        addi t0, t0, 1
+        j while_notFoundLetter_Or_EndOfString
+
+    successfulSearch_loop_end:    
+        sub a0, t0, a0
+        jr ra
+        
+    failedSearch_loop_end:
+        li a0, -1
+        jr ra
+    
 
 #isBetween(a0, a1, a2)
 #Takes:
@@ -152,8 +204,10 @@ printNumber:
     jr ra
 
 main:
-    li a0, 123
-    jal isLetter
+    la a0, myplaintext
+    li a1, 0
+    li a2, 116
+    jal findNextLetterOccurenceInTheString
     jal printNumber
 
 
