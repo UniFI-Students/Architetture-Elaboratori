@@ -7,8 +7,8 @@ E: .byte 69
 Newline: .byte 10
 
 
-mycypher: .string "ABCDE"
-myplaintext: .string "test"
+mycypher: .string "A"
+myplaintext: .string "LAUREATO"
 sostK: .word -2
 blockKey: .string "OLE"
 
@@ -19,6 +19,355 @@ encryptedtext: .string ""
 .text
 
 j main
+
+     
+
+#cesareEncryption(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+cesareEncryption:
+    addi t0, a0, -1
+    
+    cesareEncryption_Loop:
+        
+        addi t0, t0, 1
+        lb t1, 0(t0)
+        beq t1, zero, cesareEncryption_EndLoop
+        
+        addi sp, sp, -16
+        sw ra, 12(sp)
+        sw t0, 8(sp)
+        sw t1, 4(sp) 
+        sw a0, 0(sp)
+        
+        addi a0, t1, 0
+        
+        jal isSmallLetter
+         
+        #store result of isSmallLetter        
+        addi sp, sp, -4
+        sw a0, 0(sp)
+        
+        #load current character
+        lw a0, 8(sp)
+        
+        
+        jal isCapitalLetter
+        addi t3, a0, 0
+        
+        
+        
+        lw ra, 16(sp)
+        #load adress of charent character
+        lw t0, 12(sp)
+        #load current character
+        lw t1, 8(sp) 
+        #load adress of the string
+        lw a0, 4(sp)
+        #load result of isSmallLetter
+        lw t2, 0(sp)
+        addi sp, sp, 20
+        
+        li t4, 1
+        beq t2, t4, cesareEncryption_SmallLetter
+        beq t3, t4, cesareEncryption_CapitalLetter
+     
+        
+        j cesareEncryption_Loop
+        
+    cesareEncryption_SmallLetter:
+        #calculate 97 + ((t1 - 97 + sostK) % 26)
+        lw t2, sostK
+        addi t1, t1, -97
+        add t1, t1, t2
+        
+        addi sp, sp, -12
+        sw ra, 8(sp)
+        sw t0, 4(sp)
+        sw a0, 0(sp)
+        
+        addi a0, t1, 0
+        li a1, 26
+        
+        jal mod
+        addi t1, a0, 97
+        
+        lw ra, 8(sp)
+        lw t0, 4(sp)
+        lw a0, 0(sp)
+        addi sp, sp, 12
+     
+        sb t1, 0(t0)
+        j cesareEncryption_Loop
+       
+    cesareEncryption_CapitalLetter: 
+        #calculate 65 + ((t1 - 65 + sostK) % 26)
+        lw t2, sostK
+        addi t1, t1, -65
+        add t1, t1, t2
+        
+        addi sp, sp, -12
+        sw ra, 8(sp)
+        sw t0, 4(sp)
+        sw a0, 0(sp)
+        
+        addi a0, t1, 0
+        li a1, 26
+        
+        jal mod
+        addi t1, a0, 65
+        
+        lw ra, 8(sp)
+        lw t0, 4(sp)
+        lw a0, 0(sp)
+        addi sp, sp, 12
+     
+        sb t1, 0(t0)
+        j cesareEncryption_Loop
+            
+    cesareEncryption_EndLoop:
+        jr ra
+ 
+ 
+#cesareDecryption(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+cesareDecryption:
+    addi t0, a0, -1
+    
+    cesareDecryption_Loop:
+        
+        addi t0, t0, 1
+        lb t1, 0(t0)
+        beq t1, zero, cesareDecryption_EndLoop
+        
+        addi sp, sp, -16
+        sw ra, 12(sp)
+        sw t0, 8(sp)
+        sw t1, 4(sp) 
+        sw a0, 0(sp)
+        
+        addi a0, t1, 0
+        
+        jal isSmallLetter
+         
+        #store result of isSmallLetter        
+        addi sp, sp, -4
+        sw a0, 0(sp)
+        
+        #load current character
+        lw a0, 8(sp)
+        
+        
+        jal isCapitalLetter
+        addi t3, a0, 0
+        
+        
+        
+        lw ra, 16(sp)
+        #load adress of charent character
+        lw t0, 12(sp)
+        #load current character
+        lw t1, 8(sp) 
+        #load adress of the string
+        lw a0, 4(sp)
+        #load result of isSmallLetter
+        lw t2, 0(sp)
+        addi sp, sp, 20
+        
+        li t4, 1
+        beq t2, t4, cesareDecryption_SmallLetter
+        beq t3, t4, cesareDecryption_CapitalLetter
+     
+        
+        j cesareDecryption_Loop
+        
+    cesareDecryption_SmallLetter:
+        #calculate 97 + ((t1 - 97 - sostK) % 26)
+        lw t2, sostK  
+              
+        addi t1, t1, -97
+        sub t1, t1, t2
+        
+        addi sp, sp, -12
+        sw ra, 8(sp)
+        sw t0, 4(sp)
+        sw a0, 0(sp)
+        
+        addi a0, t1, 0
+        li a1, 26
+        
+        jal mod
+        addi t1, a0, 97
+        
+        lw ra, 8(sp)
+        lw t0, 4(sp)
+        lw a0, 0(sp)
+        addi sp, sp, 12
+     
+        sb t1, 0(t0)
+        j cesareDecryption_Loop
+       
+    cesareDecryption_CapitalLetter: 
+        #calculate 65 + ((t1 - 65 - sostK) % 26)
+        lw t2, sostK
+        addi t1, t1, -65
+        sub t1, t1, t2
+        
+        addi sp, sp, -12
+        sw ra, 8(sp)
+        sw t0, 4(sp)
+        sw a0, 0(sp)
+        
+        addi a0, t1, 0
+        li a1, 26
+        
+        jal mod
+        addi t1, a0, 65
+        
+        lw ra, 8(sp)
+        lw t0, 4(sp)
+        lw a0, 0(sp)
+        addi sp, sp, 12
+     
+        sb t1, 0(t0)
+        j cesareDecryption_Loop
+            
+    cesareDecryption_EndLoop:
+        jr ra   
+
+
+#inverseString(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+inverseString:
+    #calculate length of the string
+    addi sp, sp, -8
+    sw ra, 4(sp)
+    sw a0, 0(sp)
+    
+    jal length
+    
+    lw t0, 0(sp)
+    lw ra, 4(sp)
+    addi sp, sp, 8
+    
+    #t1 will have adress of last character in the string
+    add t1, t0, a0
+    addi t1, t1, -1
+    
+    addi t2, a0, 0
+    srli t2, t2, 1
+    
+    #save adress of the string to a0
+    addi a0, t0, 0
+    inverseString_Loop:
+        
+        beq t2, zero, inverseString_endLoop
+        
+        #swap characters in t0 and t1
+        lb t3, 0(t0)
+        lb t4, 0(t1)
+        sb t3, 0(t1)
+        sb t4, 0(t0)
+        
+        addi t0, t0, 1
+        addi t1, t1, -1
+        addi t2, t2, -1
+        j inverseString_Loop
+        
+    inverseString_endLoop:
+        jr ra
+        
+
+#stringToInteger(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - integer
+stringToInteger:
+    addi t0, a0, 0
+    li a0, 0
+    
+    stringToInteger_Loop:
+        #t1 will have an integer for correspoding character
+        #t2 will have final result
+        lb t1, 0(t0)
+        beq t1, zero, stringToInteger_EndLoop
+        addi t1, t1, -48
+        
+        # a0 * 10 = a0 * 2 + a0 * 8
+        addi t2, a0, 0
+        addi t3, a0, 0
+        slli t2, t2, 1
+        slli t3, t3, 3  
+        add a0, t2, t3
+        
+        
+        add a0, a0, t1
+        
+        addi t0, t0, 1
+        j stringToInteger_Loop
+        
+    stringToInteger_EndLoop:
+        jr ra
+            
+    
+
+
+#integerToString(a0, a1)
+#Takes:
+#    a0 - integer
+#    a1 - adress to write the resulting string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+integerToString:
+    li t0, 10
+    addi t1, a0, 0
+    addi t2, a1, 0
+    
+    integerToString_Loop:
+        
+        #function mod can be used here
+        rem t3, t1, t0
+        
+        #add 48 so the number would be number in ASCII code
+        addi t3, t3, 48
+        sb t3, 0(t2)
+        
+        #function div can be used here
+        div t1, t1, t0
+        addi t2, t2, 1
+        
+        beq t1, zero, integerToString_EndLoop
+        j integerToString_Loop
+    
+    integerToString_EndLoop:
+        #insert "end of the string" after writing all numbers
+        sb zero, 0(t2)
+        
+        
+        #inverse string
+        
+        
+        
+        addi sp, sp, -4
+        sw ra, 0(sp)
+        
+        addi a0, a1, 0
+        jal inverseString
+     
+        lw ra, 0(sp)
+        addi sp, sp, 4
+        
+        jr ra
+        
 
 #copyString(a0, a1)
 #Takes:
@@ -222,10 +571,10 @@ mod:
         jr ra
 
 
-#printNumber(a0)
+#printInteger(a0)
 #Takes:
-#    a0 - number
-printNumber:
+#    a0 - Integer
+printInteger:
     li a7, 1
     ecall
     jr ra
@@ -253,6 +602,12 @@ printNewLine:
 
 
 main:
+    
+    #TESTING
+    
+    #END_TESTING
+    
+    
     la s0, mycypher
     la s1, encryptedtext
     la s2, myplaintext
@@ -263,7 +618,7 @@ main:
     lb s6, D
     lb s7, E
     
-    
+    #s8 will have length of the string so it would be used inside main loops
     addi a0, s0, 0
     jal length
     addi s8, a0, 0
@@ -286,6 +641,10 @@ main:
         j main_encryption_loop
         
     main_AEncryption:
+        jal cesareEncryption
+        jal printString
+        jal printNewLine
+        
         j main_encryption_loop
     main_BEncryption:
         j main_encryption_loop
@@ -294,6 +653,10 @@ main:
     main_DEncryption:
         j main_encryption_loop
     main_EEncryption:
+        jal inverseString
+        jal printString
+        jal printNewLine
+        
         j main_encryption_loop
 
 
@@ -315,6 +678,10 @@ main:
         j main_decryption_loop
         
     main_ADecryption:
+        jal cesareDecryption
+        jal printString
+        jal printNewLine
+        
         j main_decryption_loop
     main_BDecryption:
         j main_decryption_loop
@@ -323,10 +690,14 @@ main:
     main_DDecryption:
         j main_decryption_loop
     main_EDecryption:
+        
+        jal inverseString
+        jal printString
+        jal printNewLine
+        
         j main_decryption_loop
 
 
-    main_decryption_endLoop:    
-        jal printString
+    main_decryption_endLoop:
         jal printNewLine
 
