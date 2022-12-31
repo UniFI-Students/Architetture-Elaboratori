@@ -7,8 +7,8 @@ E: .byte 69
 Newline: .byte 10
 
 
-mycypher: .string "A"
-myplaintext: .string "LAUREATO"
+mycypher: .string "C"
+myplaintext: .string "sempio di messaggio criptato -1"
 sostK: .word -2
 blockKey: .string "OLE"
 
@@ -20,6 +20,204 @@ encryptedtext: .string ""
 
 j main
 
+
+#blocksEncryption(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+blocksEncryption:
+    la t0, blockKey
+    addi t1, a0, 0
+    addi t2, t0, 0
+    
+    blocksEncryption_Loop:
+        lb t3, 0(t1)
+        lb t4, 0(t2)
+        
+        beq t3, zero, blocksEncryption_EndLoop
+        beq t4, zero, blockEncryption_SetInitialPositionOfBlockKey
+        blockEncryption_ContinueLoop:
+        
+        add t3, t3, t4
+        li t4, 96
+        rem t3, t3, t4
+        addi t3, t3, 32
+        
+        sb t3, 0(t1)
+        
+        addi t1, t1, 1
+        addi t2, t2, 1
+        j blocksEncryption_Loop
+        
+    
+    blockEncryption_SetInitialPositionOfBlockKey:
+        addi t2, t0, 0
+        lb t4, 0(t2)
+        j blockEncryption_ContinueLoop
+    
+    blocksEncryption_EndLoop:    
+        jr ra
+    
+#blocksDecryption(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+blocksDecryption:
+    la t0, blockKey
+    addi t1, a0, 0
+    addi t2, t0, 0
+    
+    blocksDecryption_Loop:
+        lb t3, 0(t1)
+        lb t4, 0(t2)
+        
+        beq t3, zero, blocksDecryption_EndLoop
+        beq t4, zero, blockDecryption_SetInitialPositionOfBlockKey
+        blockDecryption_ContinueLoop:
+        
+        # t3 = ((t3 - 32) - t4 + 96) % 96
+        addi t3, t3, 64
+        sub t3, t3, t4
+        li t4, 96
+        rem t3, t3, t4
+        
+        sb t3, 0(t1)
+        
+        addi t1, t1, 1
+        addi t2, t2, 1
+        j blocksDecryption_Loop
+        
+    
+    blockDecryption_SetInitialPositionOfBlockKey:
+        addi t2, t0, 0
+        lb t4, 0(t2)
+        j blockDecryption_ContinueLoop
+    
+    blocksDecryption_EndLoop:    
+        jr ra
+
+
+#dictionaryEncryption(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+dictionaryEncryption:
+    addi t0, a0, -1
+    
+    dictionaryEncryption_Loop:
+        addi t0, t0, 1
+        
+        lb t1, 0(t0)
+        beq t1, zero, dictionaryEncryption_EndLoop
+        
+        
+        addi sp, sp, -12
+        sw t0, 8(sp)
+        sw ra 4(sp)
+        sw a0, 0(sp)
+        
+        addi a0, t1, 0
+        
+        jal isSmallLetter
+        
+        #save result of isSmallLetter
+        addi sp, sp, -4
+        sw a0, 0(sp)
+        
+        #load current character adress
+        lw a0, 12(sp)
+        #load current character
+        lb a0, 0(a0)
+        
+        jal isCapitalLetter
+        
+        #save result of isCapitalLetter
+        addi sp, sp, -4
+        sw a0, 0(sp)
+        
+        #load current character adress
+        lw a0, 16(sp)
+        #load current character
+        lb a0, 0(a0)
+        
+        jal isNumber
+        
+        #store result of isNumber to t4
+        addi t4, a0, 0
+        
+        lw t0, 16(sp)
+        lw ra, 12(sp)
+        lw a0, 8(sp)
+        
+        #load result of isSmallLetter
+        lw t2, 4(sp)
+        #load result of isCapitalLetter
+        lw t3, 0(sp)
+        addi sp, sp, 20
+        
+        
+        li t5, 1
+        beq t2, t5, dictionaryEncryption_SmallLetter
+        beq t3, t5, dictionaryEncryption_CapitalLetter
+        beq t4, t5, dictionaryEncryption_Number
+        
+        
+        j dictionaryEncryption_Loop
+    
+    dictionaryEncryption_SmallLetter:
+        lb t1, 0(t0)
+        
+        #t1 = 90 - (t1 - 97) = 187 - t1 
+        li t2, 187
+        sub t1, t2, t1
+        
+        sb t1, 0(t0)
+        j dictionaryEncryption_Loop
+        
+    dictionaryEncryption_CapitalLetter:
+        lb t1, 0(t0)
+        
+        #t1 = 122 - (t1 - 65) = 187 - t1
+        li t2, 187
+        sub t1, t2, t1
+        
+        sb t1, 0(t0)
+        j dictionaryEncryption_Loop
+        
+    dictionaryEncryption_Number:
+        lb t1, 0(t0)
+        
+        #t1 = 57 - t1 + 48 = 105 - t1
+        li t2, 105
+        sub t1, t2, t1
+        
+        sb t1, 0(t0)
+        j dictionaryEncryption_Loop
+    
+    
+    dictionaryEncryption_EndLoop:
+        jr ra
+
+#dictionaryDecryption(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+dictionaryDecryption:    
+
+    addi sp, sp, -4
+    sw ra, 0(sp)
+    
+    jal dictionaryEncryption
+    
+    lw ra, 0(sp)
+    addi sp, sp, 4
+    
+    jr ra
+     
      
 
 #cesareEncryption(a0)
@@ -647,10 +845,18 @@ main:
         
         j main_encryption_loop
     main_BEncryption:
+        jal blocksEncryption
+        jal printString
+        jal printNewLine
+        
         j main_encryption_loop
     main_CEncryption:
         j main_encryption_loop
     main_DEncryption:
+        jal dictionaryEncryption
+        jal printString
+        jal printNewLine
+                
         j main_encryption_loop
     main_EEncryption:
         jal inverseString
@@ -684,10 +890,18 @@ main:
         
         j main_decryption_loop
     main_BDecryption:
+        jal blocksDecryption
+        jal printString
+        jal printNewLine
+        
         j main_decryption_loop
     main_CDecryption:
         j main_decryption_loop
     main_DDecryption:
+        jal dictionaryDecryption
+        jal printString
+        jal printNewLine 
+        
         j main_decryption_loop
     main_EDecryption:
         
