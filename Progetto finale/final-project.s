@@ -7,10 +7,10 @@ E: .byte 69
 Newline: .byte 10
 
 
-mycypher: .string "C"
-myplaintext: .string "sempio di messaggio criptato -1"
-sostK: .word -2
-blockKey: .string "OLE"
+mycypher: .string "AABBCCDDEE"
+myplaintext: .string "Testing some shit"
+sostK: .word -108
+blockKey: .string "a-B-c D"
 
 #Should be declared last, 
 #because it will grow after applying encryption by occurrences
@@ -20,6 +20,300 @@ encryptedtext: .string ""
 
 j main
 
+
+#occurencesEncryption(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resulting string(same adress)
+occurencesEncryption:
+    #t0 is the adress of the string
+    #t1 is the adress of the resulting string
+    #(the string will be copied in t0 after encryption)
+    addi sp, sp, -8
+    sw ra, 4(sp)
+    sw a0, 0(sp)
+    
+    jal length
+    addi t1, a0, 1
+    
+    lw ra, 4(sp)
+    lw t0, 0(sp)
+    addi sp, sp, 8
+    
+    add t1, t1, t0
+    
+    #t2 - adress of the current character in original string
+    #t3 - adress of the current character in encrypted string
+    addi t2, t0, -1
+    addi t3, t1, 0
+    
+    occurencesEncryption_Loop:
+        addi t2, t2, 1
+        beq t2, t1, occurencesEncryption_EndLoop
+        
+        #t4 - current character in original string
+        lb t4, 0(t2)
+        
+        #if t4 was already controlled than it will be marked with zero
+        #so we should skip it for encryption
+        beq t4, zero, occurencesEncryption_Loop
+        
+        #write current symbol in the resulting string
+        sb t4, 0(t3)
+        addi t3, t3, 1
+        
+        #t4 - "-" symbol  
+        li t4, 45
+        
+        #t5 - index from of the original string 
+        #of next occurence of current symbol incremented by one
+        #(used for findNextOccurence function)
+        sub t5, t2, t0
+        
+        addi t5, t5, 1
+            	
+        
+        occurencesEncyption_InternalLoop:     
+            #write "-" in the resulting string
+            sb t4 0(t3)
+            addi t3, t3, 1
+            
+            #write next occurence index in the encrypted string
+            addi sp, sp, -28
+            sw ra, 24(sp)
+            sw t0, 20(sp)
+            sw t1, 16(sp)
+            sw t2, 12(sp)
+            sw t3, 8(sp)
+            sw t4, 4(sp)
+            sw t5, 0(sp)
+            
+            addi a0, t5, 0
+            addi a1, t3, 0
+            
+            jal integerToString
+            
+            lw ra, 24(sp)
+            lw t0, 20(sp)
+            lw t1, 16(sp)
+            lw t2, 12(sp)
+            lw t3, 8(sp)
+            lw t4, 4(sp)
+            lw t5, 0(sp)
+            addi sp, sp, 28
+            
+            
+            add t3, t3, a1
+            
+            
+            addi sp, sp, -28
+            sw ra, 24(sp)
+            sw t0, 20(sp)
+            sw t1, 16(sp)
+            sw t2, 12(sp)
+            sw t3, 8(sp)
+            sw t4, 4(sp)
+            sw t5, 0(sp)
+            
+            addi a0, t0, 0
+            
+            sub a1, t1, t0
+            addi a1, a1, -1
+            
+            addi a2, t5, 0
+            lb a3, 0(t2)
+            
+            jal findNextLetterOccurenceInTheString
+            
+            lw ra, 24(sp)
+            lw t0, 20(sp)
+            lw t1, 16(sp)
+            lw t2, 12(sp)
+            lw t3, 8(sp)
+            lw t4, 4(sp)
+            lw t5, 0(sp)
+            addi sp, sp, 28
+            
+            #t6 = -1
+            li t6, -1
+            beq a0, t6, occurencesEncryption_EndInternalLoop
+            
+            #t6 - adress of the next occurence of the character 
+            add t6, t0, a0
+            #mark character in index a0 as already encrypted
+            sb zero, 0(t6) 
+            
+            addi t5, a0, 1
+            
+            j occurencesEncyption_InternalLoop
+        
+        occurencesEncryption_EndInternalLoop:
+            #t4 - " " symbol
+            li t4, 32
+            sb t4, 0(t3)
+            addi t3, t3, 1
+            
+            
+        j occurencesEncryption_Loop
+        
+        
+    
+    occurencesEncryption_EndLoop:
+        #insert end of the string in the encrypted string
+        sb zero, -1(t3)
+        
+        addi sp, sp, -8
+        sw ra, 4(sp)
+        sw t0, 0(sp)
+        
+        addi a0, t0, 0
+        addi a1, t1, 0
+        
+        jal copyString
+        
+        lw ra, 4(sp)
+        lw a0, 0(sp)
+        addi sp, sp, 8
+        
+        jr ra
+    
+
+
+#occurencesDecryption(a0)
+#Takes:
+#    a0 - adress of the string
+#Returns:
+#    a0 - adress of the resutling string(same adress)
+occurencesDecryption:
+    #t0 is the adress of the string
+    #t1 is the adress of the resulting string
+    #(the string will be copied in t0 after decryption)
+    addi sp, sp, -8
+    sw ra, 4(sp)
+    sw a0, 0(sp)
+    
+    jal length
+    addi t1, a0, 1
+    
+    lw ra, 4(sp)
+    lw t0, 0(sp)
+    addi sp, sp, 8
+    
+    add t1, t1, t0
+    
+    #t2 - adress of the current character in the original string
+    addi t2, t0, 0
+    
+    #t3 - decrypted string length
+    li t3, 0
+    
+    occurencesDecryption_Loop:
+        beq t2, t1, occurencesDecryption_EndLoop
+        
+        #t4 - character to store in decrypted string
+        lb t4, 0(t2)
+        addi t2, t2, 1
+        
+        occurencesDecryption_InternalLoop:
+              
+            #t5 - current character  in the original string
+            lb t5, 0(t2)
+            beq t5, zero, occurencesDecryption_EndInternalLoop
+            
+            #t6 - " "
+            li t6, 32
+            beq t5, t6, occurencesDecryption_EndInternalLoop
+            
+            addi t2, t2, 1      
+                        
+            #t6 - adress of the next character
+            #used for finding integer
+            addi t6, t2, 0
+            addi t3, t3, 1
+            
+            
+            occurencesDecryption_Loop_FindInteger:
+                addi t6, t6, 1
+                
+                #t5 - character in the adress of t6
+                lb t5, 0(t6)
+                #a0 - " "
+                li a0, 32
+                beq t5, a0, occurencesDecryption_EndLoop_FindInteger
+                #a0 - "-"
+                li a0, 45
+                beq t5, a0, occurencesDecryption_EndLoop_FindInteger
+                beq t5, zero, occurencesDecryption_EndLoop_FindInteger
+                j occurencesDecryption_Loop_FindInteger
+
+            occurencesDecryption_EndLoop_FindInteger:
+                #t6 here is an adress of the end of the integer
+                #store character in adress t6 to t5 and set that to 0
+                lb t5, 0(t6)
+                sb zero, 0(t6)
+                
+                #use stringToInteger method for finding storing position
+                addi sp, sp, -32
+                sw ra, 28(sp)
+                sw t0, 24(sp)
+                sw t1, 20(sp)
+                sw t2, 16(sp)
+                sw t3, 12(sp)
+                sw t4, 8(sp)
+                sw t5, 4(sp)
+                sw t6, 0(sp)
+            
+                addi a0, t2, 0
+                jal stringToInteger
+            
+                lw ra, 28(sp)
+                lw t0, 24(sp)
+                lw t1, 20(sp)
+                lw t2, 16(sp)
+                lw t3, 12(sp)
+                lw t4, 8(sp)
+                lw t5, 4(sp)
+                lw t6, 0(sp)
+                addi sp, sp, 32
+                
+                #a0 - index of the character in the resulting decrypted string
+                addi a0, a0, -1
+    
+                #a0 - adress of the decrypted character in index a0
+                add a0, t1, a0
+                #save storing character in adress a0
+                sb t4, 0(a0) 
+                sb t5, 0(t6)
+                
+                addi t2, t6, 0
+            
+            j occurencesDecryption_InternalLoop
+            
+        occurencesDecryption_EndInternalLoop:
+            addi t2, t2, 1
+        
+        j occurencesDecryption_Loop
+        
+    occurencesDecryption_EndLoop:
+        #set end of the string for decrypted string
+        add t3, t1, t3
+        sb zero, 0(t3)
+        
+        addi sp, sp, -8
+        sw ra, 4(sp)
+        sw t0, 0(sp)
+        
+        addi a0, t0, 0
+        addi a1, t1, 0
+        
+        jal copyString
+        
+        lw ra, 4(sp)
+        lw a0, 0(sp)
+        addi sp, sp, 8
+        
+        jr ra
 
 #blocksEncryption(a0)
 #Takes:
@@ -77,12 +371,40 @@ blocksDecryption:
         beq t4, zero, blockDecryption_SetInitialPositionOfBlockKey
         blockDecryption_ContinueLoop:
         
-        # t3 = ((t3 - 32) - t4 + 96) % 96
-        addi t3, t3, 64
+        addi t3, t3, -32
         sub t3, t3, t4
-        li t4, 96
-        rem t3, t3, t4
         
+        
+        addi sp, sp, -20
+        sw ra, 16(sp)
+        sw t0, 12(sp)
+        sw t1, 8(sp)
+        sw t2, 4(sp)       
+        sw a0, 0(sp)
+        
+        addi a0, t3, 0
+        li a1, 96
+        
+        jal mod
+        
+        addi t3, a0, 0
+        
+        lw ra, 16(sp)
+        lw t0, 12(sp)
+        lw t1, 8(sp)
+        lw t2, 4(sp)       
+        lw a0, 0(sp)
+        addi sp, sp, 20
+        
+        
+               
+        li t5, 32
+        bge t3, t5, skip_add_ciphercode
+        
+        addi t3, t3, 96
+        
+        skip_add_ciphercode:
+            
         sb t3, 0(t1)
         
         addi t1, t1, 1
@@ -525,6 +847,7 @@ stringToInteger:
 #    a1 - adress to write the resulting string
 #Returns:
 #    a0 - adress of the resulting string(same adress)
+#    a1 - length of the resulting number
 integerToString:
     li t0, 10
     addi t1, a0, 0
@@ -555,14 +878,18 @@ integerToString:
         
         
         
-        addi sp, sp, -4
-        sw ra, 0(sp)
+        addi sp, sp, -8
+        sw ra, 4(sp)
+        sw a0, 0(sp)
         
         addi a0, a1, 0
         jal inverseString
+        jal length
+        addi a1, a0, 0
      
-        lw ra, 0(sp)
-        addi sp, sp, 4
+        lw a0, 0(sp) 
+        lw ra, 4(sp)
+        addi sp, sp, 8
         
         jr ra
         
@@ -606,20 +933,22 @@ length:
         sub a0, t0, a0
         jr ra
 
-#findNextLetterOccurenceInTheString(a0, a1, a2)
+#findNextLetterOccurenceInTheString(a0, a1, a2, a3)
 #Takes:
 #    a0 - adress of the string
-#    a1 - offset
-#    a2 - letter
+#    a1 - length of the string
+#    a2 - offset
+#    a3 - letter
 #Returns:
 #    a0 - index of the next letter occurence
 findNextLetterOccurenceInTheString:
-    add t0, a0, a1
+    add t0, a0, a2
+    add a1, a0, a1
 
-    while_notFoundLetter_Or_EndOfString:    
+    while_notFoundLetter_Or_EndOfString:   
+        beq t0, a1, failedSearch_loop_end 
         lb t1, 0(t0)
-        beq t1, zero, failedSearch_loop_end
-        beq t1, a2, successfulSearch_loop_end
+        beq t1, a3, successfulSearch_loop_end
         addi t0, t0, 1
         j while_notFoundLetter_Or_EndOfString
 
@@ -851,6 +1180,10 @@ main:
         
         j main_encryption_loop
     main_CEncryption:
+        jal occurencesEncryption
+        jal printString
+        jal printNewLine
+        
         j main_encryption_loop
     main_DEncryption:
         jal dictionaryEncryption
@@ -896,6 +1229,10 @@ main:
         
         j main_decryption_loop
     main_CDecryption:
+        jal occurencesDecryption
+        jal printString
+        jal printNewLine
+        
         j main_decryption_loop
     main_DDecryption:
         jal dictionaryDecryption
