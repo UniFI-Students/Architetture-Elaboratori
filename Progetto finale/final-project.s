@@ -7,10 +7,10 @@ E: .byte 69
 Newline: .byte 10
 
 
-mycypher: .string "AABBCCDDEE"
-myplaintext: .string "Testing some shit"
-sostK: .word -108
-blockKey: .string "a-B-c D"
+mycypher: .string "EDCBA"
+myplaintext: .string "simple test -1"
+sostK: .word 5
+blockKey: .string "104A-"
 
 #Should be declared last, 
 #because it will grow after applying encryption by occurrences
@@ -1129,10 +1129,6 @@ printNewLine:
 
 
 main:
-    
-    #TESTING
-    
-    #END_TESTING
     
     
     la s0, mycypher
