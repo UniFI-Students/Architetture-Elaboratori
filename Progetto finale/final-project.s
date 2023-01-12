@@ -1079,7 +1079,7 @@ mod:
     addi t1, a1, 0
     
     bge t0, t1, sub_loop_mod  
-    bgt t0, zero, end_loop_mod
+    bge t0, zero, end_loop_mod
 
     #add untill original value is less than zero
     #(in case of negative original value)
