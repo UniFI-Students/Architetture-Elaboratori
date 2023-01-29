@@ -7,10 +7,10 @@ E: .byte 69
 Newline: .byte 10
 
 
-mycypher: .string "EDCBA"
-myplaintext: .string "simple test -1"
-sostK: .word 5
-blockKey: .string "104A-"
+mycypher: .string "ABCDE"
+myplaintext: .string "!$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+sostK: .word 10
+blockKey: .string "()Strong"
 
 #Should be declared last, 
 #because it will grow after applying encryption by occurrences
